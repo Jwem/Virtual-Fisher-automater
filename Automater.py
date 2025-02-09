@@ -3,16 +3,17 @@ import time
 import keyboard
 from PIL import Image
 import pytesseract
+import threading
 
 # Specify the path to the Tesseract executable if it's not in your PATH
 pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
-
 
 # Initialize delay as a global variable
 delay = 3.2
 antiBotActive = False
 buying = False
 boat = False
+stop_script = False
 
 def check_pixel_color_private_msg():
     x, y = 1500, 880
@@ -39,6 +40,31 @@ def upgrade_boat():
     for x, y in coordinates:
         pyautogui.click(x, y)
         time.sleep(2)
+
+def buying_func():
+    global buying
+    global current_time
+    buying = True
+    commands = [
+        '/buy Auto10m',
+        '/buy Fish5m',
+        '/buy Treasure5m',
+        '/buy Auto30m',
+        '/buy Fish20m',
+        '/buy Treasure20m',
+        '/buy Fish Ovens',
+    ]
+    for command in commands:
+        pyautogui.write(command)
+        pyautogui.press('enter')
+        pyautogui.press('enter')
+        time.sleep(2)
+    last_command_time = current_time
+
+def remote_turn_off():
+    text = text_captcha()
+    if "Remote" in text:
+        return True
 
 def check_anti_bot_and_verify():
     global antiBotActive
@@ -121,18 +147,16 @@ def check_anti_bot_and_verify():
         return True  # Stop the main loop
     return False
 
+def listen_for_esc():
+    global stop_script
+    keyboard.wait('esc')
+    print("Escape key pressed. Exiting...")
+    stop_script = True
+
 def main():
-    global delay, antiBotActive, buying, boat
-    stop_script = False
+    global delay, antiBotActive, buying, boat, stop_script
     print("2 seconds to move to the desired window.")
     time.sleep(2)
-
-    def on_esc():
-        nonlocal stop_script
-        print("Escape key pressed. Exiting...")
-        stop_script = True
-
-    keyboard.add_hotkey('esc', on_esc)
 
     last_command_time = time.time()
     last_click_time = time.time()
@@ -144,7 +168,13 @@ def main():
             
             # New anti-bot check at each loop iteration
             if check_anti_bot_and_verify():
-                break
+                print("Anti-bot verification failed. Exiting...")
+                stop_script = True
+
+            # Check for remote turn-off message
+            if remote_turn_off():
+                print("Remote turn-off message detected. Exiting...")
+                stop_script = True
 
             # Skip issuing commands if anti-bot check is active
             if antiBotActive:
@@ -158,7 +188,6 @@ def main():
                 time.sleep(5)
                 boat = False
 
-
             if current_time - last_reduce_time >= 120:  # every 2 minutes
                 delay -= 0.1
                 print(f"Reduced delay: {delay}")
@@ -169,22 +198,7 @@ def main():
                 last_click_time = current_time
             
             if current_time - last_command_time >= 300:
-                buying = True
-                commands = [
-                    '/buy Auto10m',
-                    '/buy Fish5m',
-                    '/buy Treasure5m',
-                    '/buy Auto30m',
-                    '/buy Fish20m',
-                    '/buy Treasure20m',
-                    '/buy Fish Ovens',
-                ]
-                for command in commands:
-                    pyautogui.write(command)
-                    pyautogui.press('enter')
-                    pyautogui.press('enter')
-                    time.sleep(2)
-                last_command_time = current_time
+                buying_func()
 
             if check_pixel_color_private_msg():
                 print("Pixel color matched. Increasing delay...")
@@ -204,4 +218,7 @@ def main():
         print("Program interrupted by user.")
 
 if __name__ == "__main__":
+    esc_listener = threading.Thread(target=listen_for_esc)
+    esc_listener.start()
     main()
+    esc_listener.join()
