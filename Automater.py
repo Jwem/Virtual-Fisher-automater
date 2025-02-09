@@ -4,14 +4,15 @@ import keyboard
 from PIL import Image
 import pytesseract
 
+# Specify the path to the Tesseract executable if it's not in your PATH
+pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
+
+
 # Initialize delay as a global variable
 delay = 3.2
 antiBotActive = False
 buying = False
 boat = False
-
-# Specify the path to the Tesseract executable if it's not in your PATH
-pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
 def check_pixel_color_private_msg():
     x, y = 1500, 880
@@ -56,15 +57,12 @@ def check_anti_bot_and_verify():
             if code:
                 pyautogui.write(f"/verify {code}")
                 pyautogui.press('enter')
-                screenshot = pyautogui.screenshot(region=(407, 893, 140, 27))
-                result_text = pytesseract.image_to_string(screenshot)
+                result_text = text_captcha()
                 time.sleep(3)  # Wait for verification to complete
                 if "Incorrect" not in result_text:
                     print(f"Verified with code: {code}")
                     antiBotActive = False
                     return False  # Continue normal operation
-        
-                        # Fallback to image captcha if "Code:" is absent
 
         # Fallback to image captcha if "Code:" is absent
         img_text = image_captcha()
