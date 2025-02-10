@@ -276,7 +276,7 @@ def main():
                 delay += 0.1
                 print(f"New delay: {delay}")
                             
-            if current_time - last_command_time >= 60: # Every 1 minute
+            if current_time - last_command_time >= 600: # Every 10 minutes
                 pyautogui.write('/sell all')
                 pyautogui.press('enter')
                 pyautogui.press('enter')
