@@ -301,6 +301,8 @@ def buy_rod():
             
     if affordable_rod:
         log_message(f"Buying new rod: {rod_to_add}")
+        if check_anti_bot_and_verify():
+            return False
         pyautogui.write(affordable_rod)
         pyautogui.press('enter')
         time.sleep(2)
@@ -309,6 +311,8 @@ def buy_rod():
         owned_rods.add(rod_to_add)
         log_message(f"Owned rods: {', '.join(sorted(owned_rods, key=lambda x: ROD_ORDER.index(x)))}")
         time.sleep(1)
+        if check_anti_bot_and_verify():
+            return False
         pyautogui.write('/fish')
         time.sleep(0.5)
         pyautogui.press('enter')
@@ -354,6 +358,8 @@ def buy_boat():
             
     if affordable_boat:
         log_message(f"Buying new boat: {boat_to_add}")
+        if check_anti_bot_and_verify():
+            return False
         pyautogui.write(affordable_boat)
         pyautogui.press('enter')
         time.sleep(2)
@@ -362,6 +368,8 @@ def buy_boat():
         owned_boats.add(boat_to_add)
         log_message(f"Owned boats: {', '.join(sorted(owned_boats, key=lambda x: BOAT_ORDER.index(x)))}")
         time.sleep(1)
+        if check_anti_bot_and_verify():
+            return False
         pyautogui.write('/fish')
         time.sleep(0.5)
         pyautogui.press('enter')
@@ -411,26 +419,28 @@ def check_anti_bot_and_verify():
                     log_message(f"Code: {code} failed. Regenerating...")
             else:
                 # Fallback to image captcha if "Code:" is absent
-                captcha = text_captcha().split('captcha.')[1].split('All')[0].replace('\n', '').replace(' ', '')
-                pyautogui.write(f"/verify {captcha}")
-                pyautogui.press('enter')
-                time.sleep(5)
-                result_text = private_message()
-                if "incorrect" not in result_text.lower():
-                    log_message(f"Verified with image code: {captcha}")
-                    antiBotActive = False
-                    pyautogui.write('/fish')
-                    time.sleep(0.5)
+                text = text_captcha()
+                if 'captcha.' in text:
+                    captcha = text.split('captcha.')[1].split('All')[0].replace('\n', '').replace(' ', '')
+                    pyautogui.write(f"/verify {captcha}")
                     pyautogui.press('enter')
-                    pyautogui.press('enter')
-                    time.sleep(2)
-                    return False  # Continue normal operation
-                if "you have regenerated your captcha too many times" in result_text.lower():
-                    log_message("Verification unsuccessful after 5 regens. Waiting for cooldown...")
-                    pyautogui.write('Waiting for regen cooldown...')
-                    pyautogui.press('enter')
-                    time.sleep(900) # 15 minutes
-                log_message(f"Image code: {captcha} failed. Regenerating...")
+                    time.sleep(5)
+                    result_text = private_message()
+                    if "incorrect" not in result_text.lower():
+                        log_message(f"Verified with image code: {captcha}")
+                        antiBotActive = False
+                        pyautogui.write('/fish')
+                        time.sleep(0.5)
+                        pyautogui.press('enter')
+                        pyautogui.press('enter')
+                        time.sleep(2)
+                        return False  # Continue normal operation
+                    if "you have regenerated your captcha too many times" in result_text.lower():
+                        log_message("Verification unsuccessful after 5 regens. Waiting for cooldown...")
+                        pyautogui.write('Waiting for regen cooldown...')
+                        pyautogui.press('enter')
+                        time.sleep(900) # 15 minutes
+                    log_message(f"Image code: {captcha} failed. Regenerating...")
             
             pyautogui.write("/verify regen")
             pyautogui.press('enter')
