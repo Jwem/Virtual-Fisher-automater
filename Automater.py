@@ -62,7 +62,8 @@ BIOMES = {
     50: ("Volcanic", "/biome Volcanic"), # Level 50
     100: ("Ocean", "/biome Ocean"),     # Level 100
     250: ("Sky", "/biome Sky"),         # Level 250
-    500: ("Alien", "/biome Alien")      # Level 500
+    500: ("Space", "/biome Space"),     # Level 500
+    1000: ("Alien", "/biome Alien")      # Level 1000
 }
 current_biome = "River"
 
