@@ -9,9 +9,10 @@ import random
 # Specify the path to the Tesseract executable if it's not in your PATH
 pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
+has_supporter_rod = False
 delay = 2.9
 fishingx = 440
-fishingy = 907 # 907 / 963
+fishingy = 907
 antiBotActive = False
 buying = False
 boat = False
@@ -20,41 +21,42 @@ current_time = time.time()
 balance = 0
 level = 0
 owned_rods = set()  # Keep track of owned rods
+current_biome = "River"
 ROD_ORDER = [
     "Improved Rod",     # 500
-    "Steel Rod",        # 8,000
-    "Fiberglass Rod",   # 50,000
-    "Heavy Rod",        # 100,000
-    "Alloy Rod",        # 250,000
-    "Lava Rod",         # 1,000,000
-    "Magma Rod",        # 10,000,000
-    "Oceanium Rod",     # 75,000,000
-    "Golden Rod",       # 120,000,000
-    "Superium Rod",     # 250,000,000
-    "Infinity Rod",     # 1,000,000,000
-    "Floating Rod",     # Price unknown
-    "Sky Rod",          # Price unknown
-    "Meteor Rod",       # Price unknown
-    "Space Rod",        # Price unknown
+    "Steel Rod",        # 8,000 8K
+    "Fiberglass Rod",   # 50,000 50K
+    "Heavy Rod",        # 100,000 100K
+    "Alloy Rod",        # 250,000 250K
+    "Lava Rod",         # 1,000,000 1M
+    "Magma Rod",        # 10,000,000 10M
+    "Oceanium Rod",     # 75,000,000 75M 
+    "Golden Rod",       # 120,000,000 120M
+    "Superium Rod",     # 250,000,000 250M
+    "Infinity Rod",     # 1,000,000,000 1B
+    "Floating Rod",     # 50,000,000,000 50B
+    "Sky Rod",          # 250,000,000,000 250B
+    "Meteor Rod",       # 500,000,000,000 500B
+    "Space Rod",        # 1,000,000,000,000 1T
     "Alien Rod"         # Price unknown
 ]
 owned_boats = set()  # Keep track of owned boats
 BOAT_ORDER = [
-    "Rowboat",           # 2,500
-    "Fishing Boat",      # 25,000
-    "Speedboat",         # 100,000
-    "Pontoon",           # 250,000
-    "Sailboat",          # 1,000,000
-    "Yacht",             # 20,000,000
-    "Luxury Yacht",      # 100,000,000
-    "Cruise Ship",       # 500,000,000
-    "Goldboat",          # 2,500,000,000
-    "Sky cruiser",       # 10,000,000,000
-    "Satellite",         # 50,000,000,000
-    "Space Shuttle",     # 250,000,000,000
-    "Cruiser",           # 1,000,000,000,000
-    "Alien raft",        # 2,500,000,000,000
-    "Alien submarine"    # 5,000,000,000,000
+    "Rowboat",           # 2,500 2.5K
+    "Fishing Boat",      # 25,000 25K
+    "Speedboat",         # 100,000 100K
+    "Pontoon",           # 250,000 250K
+    "Sailboat",          # 1,000,000 1M
+    "Yacht",             # 20,000,000 20M
+    "Luxury Yacht",      # 100,000,000 100M
+    "Cruise Ship",       # 500,000,000 500M
+    "Goldboat",          # 2,500,000,000 2.5B
+    "Sky cruiser",       # 10,000,000,000 10B
+    "Satellite",         # 50,000,000,000 50B
+    "Space Shuttle",     # 250,000,000,000 250B
+    "Cruiser",           # 1,000,000,000,000 1T
+    "Alien raft",        # 2,500,000,000,000 2.5T
+    "Alien submarine"    # 5,000,000,000,000 5T
 ]
 
 BIOMES = {
@@ -65,27 +67,34 @@ BIOMES = {
     500: ("Space", "/biome Space"),     # Level 500
     1000: ("Alien", "/biome Alien")      # Level 1000
 }
-current_biome = "River"
+
+pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
+
+def initialize_prestige():
+    global prestige
+    print("What prestige level are you?") # Answer is an integer, save it
+    prestige = int(input("> "))
+
 
 def initialize_biome():
-    """Initialize the current biome through user input"""
-    global current_biome
+    global current_biome, new_biome, level
     
     print("\nWhich biome are you currently in?")
-    for level, (biome_name, _) in sorted(BIOMES.items()):
-        print(f"{biome_name} (Level {level})")
+    for level_req, (biome_name, _) in sorted(BIOMES.items()):
+        print(f"{biome_name} (Level {level_req})")
     
     while True:
         choice = input("> ").strip().title()
-        for _, (biome_name, _) in BIOMES.items():
+        for req_level, (biome_name, _) in BIOMES.items():
             if choice == biome_name:
                 current_biome = choice
-                log_message(f"Starting in biome: {current_biome}")
+                new_biome = choice
+                # Set the level to match the biome's requirement
+                level = req_level
+                log_message(f"Starting in biome: {current_biome} (Level {level})")
                 return
         print("Invalid biome. Please choose from the list above.")
 
-# Add this to your global variables section
-has_supporter_rod = False
 
 def initialize_owned_items(item_type):
     """Initialize owned items (rods or boats) through user input
@@ -194,12 +203,6 @@ def image_captcha():
     text = pytesseract.image_to_string(screenshot)
     return text
 
-def private_message():
-    region = (315, 900, 335, 80) # (left, top, width, height)
-    screenshot = pyautogui.screenshot(region=region)
-    text = pytesseract.image_to_string(screenshot)
-    return text
-
 def remote_turn_off():
     text = text_captcha()
     if "Remote" in text:
@@ -249,16 +252,14 @@ def check_balance():
         string_balance = string_balance.replace(",", "")
         try:
             balance = int(string_balance)
-            log_message(f"Balance: ${string_balance}")
             return balance
         except ValueError:
             log_message(f"Error converting balance: {string_balance}")
     return None
 
 def buy_rod():
-    global balance, owned_rods, has_supporter_rod
-    
-    # List of rods to skip if user has supporter rod
+    global balance, owned_rods, has_supporter_rod, level, prestige
+
     skip_rods = {
         "Improved Rod",
         "Steel Rod", 
@@ -269,40 +270,55 @@ def buy_rod():
         "Sky Rod"
     }
     
-    # Rod prices and commands
+    if prestige > 4:
+        skip_rods.add("Alloy Rod")
+    if prestige > 12:
+        skip_rods.add("Superium Rod")
+    if prestige > 30:
+        skip_rods.add("Space Rod")
+    if prestige > 85:
+        skip_rods.add("Sky Rod")
+        skip_rods.add("Space Rod")
+
+    # Rod prices, commands, and required levels
     rods = {
         # Basic rods
-        500: ("Improved Rod", "/buy Improved Rod"),
-        8000: ("Steel Rod", "/buy Steel Rod"), 
-        50000: ("Fiberglass Rod", "/buy Fiberglass Rod"),
-        100000: ("Heavy Rod", "/buy Heavy Rod"),
-        250000: ("Alloy Rod", "/buy Alloy Rod"),
-        1000000: ("Lava Rod", "/buy Lava Rod"),
-        10000000: ("Magma Rod", "/buy Magma Rod"),
+        500: ("Improved Rod", "/buy Improved Rod", 0),
+        8000: ("Steel Rod", "/buy Steel Rod", 0), 
+        50000: ("Fiberglass Rod", "/buy Fiberglass Rod", 0),
+        100000: ("Heavy Rod", "/buy Heavy Rod", 0),
+        250000: ("Alloy Rod", "/buy Alloy Rod", 0),
+        1000000: ("Lava Rod", "/buy Lava Rod", 0),
+        10000000: ("Magma Rod", "/buy Magma Rod", 0),
         # Level 100 rods
-        75000000: ("Oceanium Rod", "/buy Oceanium Rod"),
-        120000000: ("Golden Rod", "/buy Golden Rod"),
-        250000000: ("Superium Rod", "/buy Superium Rod"),
-        1000000000: ("Infinity Rod", "/buy Infinity Rod"),
-        # Level 250 rods TODO: add
+        75000000: ("Oceanium Rod", "/buy Oceanium Rod", 100),
+        120000000: ("Golden Rod", "/buy Golden Rod", 100),
+        250000000: ("Superium Rod", "/buy Superium Rod", 100),
+        1000000000: ("Infinity Rod", "/buy Infinity Rod", 100),
+        # Level 250 rods
+        50000000000: ("Floating Rod", "/buy Floating Rod", 250),
+        250000000000: ("Sky Rod", "/buy Sky Rod", 250),
+        # Level 500 rods
+        500000000000: ("Meteor Rod", "/buy Meteor Rod", 500),
+        1000000000000: ("Space Rod", "/buy Space Rod", 500),
     }
     
     affordable_rod = None
     affordable_price = 0
     
-    for price, (rod_name, command) in sorted(rods.items()):
-        if rod_name == "Golden Rod" or rod_name == "Heavy Rod":
+    for price, (rod_name, command, required_level) in sorted(rods.items()):
+        if rod_name == "Heavy Rod" or rod_name == "Golden Rod" or rod_name == "Meteor Rod":
             continue
         if has_supporter_rod and rod_name in skip_rods:
             continue
-        if balance >= price and rod_name not in owned_rods:
+        if balance >= price and rod_name not in owned_rods and level >= required_level:
             affordable_rod = command
             affordable_price = price
             rod_to_add = rod_name
             
     if affordable_rod:
         log_message(f"Buying new rod: {rod_to_add}")
-        if check_anti_bot_and_verify():
+        if anti_bot():
             return False
         pyautogui.write(affordable_rod)
         pyautogui.press('enter')
@@ -312,7 +328,7 @@ def buy_rod():
         owned_rods.add(rod_to_add)
         log_message(f"Owned rods: {', '.join(sorted(owned_rods, key=lambda x: ROD_ORDER.index(x)))}")
         time.sleep(1)
-        if check_anti_bot_and_verify():
+        if anti_bot():
             return False
         pyautogui.write('/fish')
         time.sleep(0.5)
@@ -322,44 +338,44 @@ def buy_rod():
     return False
 
 def buy_boat():
-    global balance, owned_boats
-    # Boat prices and commands
+    global balance, owned_boats, level
+    # Boat prices, commands, and required levels
     boats = {
         # Basic boats
-        2500: ("Rowboat", "/buy Rowboat"), # 2.5K
-        25000: ("Fishing Boat", "/buyFishing Boat"), # 25K
-        100000: ("Speedboat", "/buy Speedboat"), # 100K
-        250000: ("Pontoon", "/buy Pontoon"), # 250K
-        1000000: ("Sailboat", "/buy Sailboat"), # 1M
-        20000000: ("Yacht", "/buy Yacht"), # 20M
+        2500: ("Rowboat", "/buy Rowboat", 0), # 2.5K
+        25000: ("Fishing Boat", "/buy Fishing Boat", 0), # 25K
+        100000: ("Speedboat", "/buy Speedboat", 0), # 100K
+        250000: ("Pontoon", "/buy Pontoon", 0), # 250K
+        1000000: ("Sailboat", "/buy Sailboat", 0), # 1M
+        20000000: ("Yacht", "/buy Yacht", 0), # 20M
         # Level 50 boats
-        100000000: ("Luxury Yacht", "/buy Luxury Yacht"), # 100M
+        100000000: ("Luxury Yacht", "/buy Luxury Yacht", 50), # 100M
         # Level 100 boats
-        500000000: ("Cruise Ship", "/buy Cruise Ship"), # 500M
+        500000000: ("Cruise Ship", "/buy Cruise Ship", 100), # 500M
         # Level 250 boats
-        2500000000: ("Goldboat", "/buy Goldboat"), # 2.5B
-        10000000000: ("Sky cruiser", "/buy Sky cruiser"), # 10B
+        2500000000: ("Goldboat", "/buy Goldboat", 250), # 2.5B
+        10000000000: ("Sky cruiser", "/buy Sky cruiser", 250), # 10B
         # Level 500 boats
-        50000000000: ("Satellite", "/buy Satellite"), # 50B
-        250000000000: ("Space Shuttle", "/buy Space Shuttle"), # 250B
-        1000000000000: ("Cruiser", "/buy Cruiser"), # 1T
+        50000000000: ("Satellite", "/buy Satellite", 500), # 50B
+        250000000000: ("Space Shuttle", "/buy Space Shuttle", 500), # 250B
+        1000000000000: ("Cruiser", "/buy Cruiser", 500), # 1T
         # Level 1000 boats
-        2500000000000: ("Alien raft", "/buy Alien raft"), # 2.5T
-        5000000000000: ("Alien submarine", "/buy Alien submarine") # 5T
+        2500000000000: ("Alien raft", "/buy Alien raft", 1000), # 2.5T
+        5000000000000: ("Alien submarine", "/buy Alien submarine", 1000) # 5T
     }
     
     affordable_boat = None
     affordable_price = 0
     
-    for price, (boat_name, command) in sorted(boats.items()):
-        if balance >= price and boat_name not in owned_boats:
+    for price, (boat_name, command, required_level) in sorted(boats.items()):
+        if balance >= price and boat_name not in owned_boats and level >= required_level:
             affordable_boat = command
             affordable_price = price
             boat_to_add = boat_name
             
     if affordable_boat:
         log_message(f"Buying new boat: {boat_to_add}")
-        if check_anti_bot_and_verify():
+        if anti_bot():
             return False
         pyautogui.write(affordable_boat)
         pyautogui.press('enter')
@@ -369,7 +385,7 @@ def buy_boat():
         owned_boats.add(boat_to_add)
         log_message(f"Owned boats: {', '.join(sorted(owned_boats, key=lambda x: BOAT_ORDER.index(x)))}")
         time.sleep(1)
-        if check_anti_bot_and_verify():
+        if anti_bot():
             return False
         pyautogui.write('/fish')
         time.sleep(0.5)
@@ -378,7 +394,7 @@ def buy_boat():
         return True
     return False
 
-def check_anti_bot_and_verify():
+def anti_bot():
     global antiBotActive
     text = text_captcha()  # assign text variable
     canRegen = True
@@ -401,8 +417,8 @@ def check_anti_bot_and_verify():
                 if code:
                     pyautogui.write(f"/verify {code}")
                     pyautogui.press('enter')
-                    time.sleep(5)
-                    result_text = private_message()
+                    time.sleep(10)
+                    result_text = text_captcha()
                     if "incorrect" not in result_text.lower():
                         log_message(f"Verified with code: {code}")
                         antiBotActive = False
@@ -425,8 +441,8 @@ def check_anti_bot_and_verify():
                     captcha = text.split('captcha.')[1].split('All')[0].replace('\n', '').replace(' ', '')
                     pyautogui.write(f"/verify {captcha}")
                     pyautogui.press('enter')
-                    time.sleep(5)
-                    result_text = private_message()
+                    time.sleep(10)
+                    result_text = text_captcha().lower()
                     if "incorrect" not in result_text.lower():
                         log_message(f"Verified with image code: {captcha}")
                         antiBotActive = False
@@ -467,7 +483,9 @@ def log_message(message):
 def main():
     sell_clicks = 0
     time_boosts = 0
-    global delay, antiBotActive, buying, boat, stop_script, fishingx, fishingy, balance
+    run_time = 0
+    level = 0
+    global delay, antiBotActive, buying, boat, stop_script, fishingx, fishingy, balance, owned_rods, owned_boats, has_supporter_rod, new_biome, current_biome
     log_message("2 seconds to move to the desired window.")
     time.sleep(2)
 
@@ -476,9 +494,14 @@ def main():
 
     try:
         while not stop_script:
+            time.sleep(random.uniform(0, 0.5))
             current_time = time.time()
             text = text_captcha().lower()
             # Random pauses to simulate human behavior
+
+            if "this interaction failed" in text:
+                time.sleep(20 + random.uniform(0, 10))
+
             if random.random() < 0.002:
                 log_message("Random pause...")
                 pause = random.uniform(5, 12)
@@ -487,10 +510,12 @@ def main():
                 time.sleep(pause)
                 if check_pixel_color_private_msg():
                     pyautogui.click(fishingx, fishingy - 200)
+                    time.sleep(delay)
                 else:
                     pyautogui.click(fishingx, fishingy - 65)
+                    time.sleep(delay)
                 time_boosts += pause
-            if random.random() < 0.0087:
+            if random.random() < 0.0037:
                 log_message("Long random pause...")
                 pause = random.uniform(33, 97)
                 pyautogui.write(f'Long random pause... {round((pause), 1)}s')
@@ -498,20 +523,11 @@ def main():
                 time.sleep(pause)
                 if check_pixel_color_private_msg():
                     pyautogui.click(fishingx, fishingy - 200)
+                    time.sleep(delay)
                 else:
                     pyautogui.click(fishingx, fishingy - 65)
+                    time.sleep(delay)
                 time_boosts += pause
-            """if random.random() < 0.001:
-                log_message("Very long random pause...")
-                pause = random.uniform(537, 654)
-                pyautogui.write(f'Very long random pause... {round((pause), 1)}s')
-                pyautogui.press('enter')
-                time.sleep(pause)
-                if check_pixel_color_private_msg():
-                    pyautogui.click(fishingx, fishingy - 200)
-                else:
-                    pyautogui.click(fishingx, fishingy - 65)
-                time_boosts += pause """
             
             # The delay shouldn't realistically go that low or high so we exit the program
             if delay < 1 or delay > 6:
@@ -521,7 +537,7 @@ def main():
                 stop_script = True
 
             # New anti-bot check at each loop iteration
-            if check_anti_bot_and_verify():
+            if anti_bot():
                 log_message("Anti-bot verification failed. Exiting...")
                 pyautogui.write('Anti-bot verification failed. Exiting...')
                 pyautogui.press('enter')
@@ -544,6 +560,7 @@ def main():
                 last_reduce_time = current_time
 
             if 'ended!' in text or 'stopped working' in text or time_boosts >= 1800:  # When boosts end or after 30 minutes
+                run_time += time_boosts
                 buying = True
                 buying_boosts()
                 time_boosts = 0
@@ -559,9 +576,12 @@ def main():
                 balance = 0
                 owned_rods.clear()
                 owned_boats.clear()
+                current_biome = "River"
+                new_biome = current_biome
+                level = 0
                 time.sleep(2)
                 pyautogui.write('/fish')
-                time.sleep(0.5)
+                time.sleep(1)
                 pyautogui.press('enter')
                 pyautogui.press('enter')
                 
@@ -570,25 +590,37 @@ def main():
                     # More robust level extraction
                     level_text = text[text.find('you are now level'):].split('.')[0]
                     level_number = ''.join(filter(str.isdigit, level_text))
-                    if level_number:
-                        level = int(level_number)
-                        log_message(f"Leveled up: {level}")
+                    if level_number and int(level_number) < 15000:  # Limit to level 15,000
+                        temp_level = int(level_number)
+                        if temp_level > level:
+                            level = temp_level
 
-                    for lvl in range(level - 10, level): 
-                        if lvl in BIOMES:
-                            current_biome = BIOMES[lvl][0]
-                            log_message(f"Reached level {lvl}. New biome: {current_biome}")
-                            pyautogui.write(BIOMES[lvl][1])
-                            pyautogui.press('enter')
-                            time.sleep(2)
-                            pyautogui.write('/rod supporter')
-                            time.sleep(0.5)
-                            pyautogui.press('enter')
-                            pyautogui.write('/fish')
-                            time.sleep(0.5)
-                            pyautogui.press('enter')
-                            pyautogui.press('enter')
+                    if current_biome == "Alien": # Skip biome change if in Alien biome
+                        continue
+                    # Check if we can even change biomes
+                    highest_accessible_biome = current_biome
+                    highest_level_req = 0
+                    highest_biome_command = None
+
+                    for level_req, (biome_name, biome_command) in sorted(BIOMES.items()):
+                        if level >= level_req:
+                            highest_accessible_biome = biome_name
+                            highest_level_req = level_req
+                            highest_biome_command = biome_command
                     
+                    if highest_accessible_biome != current_biome and level <= 15000: # Limit to level 15,000
+                        log_message(f"New biome: {highest_accessible_biome} (Level {level})")
+                        current_biome = highest_accessible_biome
+                        pyautogui.write(highest_biome_command)
+                        pyautogui.press('enter')  # Also added this line to execute the command
+                        pyautogui.write('/rod supporter')
+                        pyautogui.press('enter')
+                        time.sleep(0.5)
+                        pyautogui.write('/fish')
+                        time.sleep(0.5)
+                        pyautogui.press('enter')
+                        pyautogui.press('enter')
+
                 except (IndexError, ValueError) as e:
                     log_message(f"Error parsing level: {e}")
                     log_message(f"Debug - Problematic text: {text}")
@@ -605,23 +637,26 @@ def main():
             if sell_clicks >= 10 + round(random.uniform(0, 5)):  # every 10-15 clicks
                 pyautogui.click(fishingx + 100, fishingy)
                 time.sleep(delay + random.uniform(0, 0.5))
-                balance = check_balance()
-                if balance:  # Only proceed if we got a valid balance
-                    if buy_rod():  # Only try to buy boat if rod purchase failed
-                        pass
-                    else:
-                        buy_boat()  # Try to buy boat only if we didn't buy a rod
-                sell_clicks = 0
+                temp_balance = check_balance()
+                if temp_balance is not None:
+                    if temp_balance - 1 % 10 != 0:
+                        balance = temp_balance # Only when last digit is 1 because the program sometimes mistakes exclamation marks for 1s
+                        if balance:  # Only proceed if we got a valid balance
+                            if buy_rod():  # Only try to buy boat if rod purchase failed
+                                pass
+                            else:
+                                buy_boat()  # Try to buy boat only if we didn't buy a rod
+                    sell_clicks = 0
             else:
-                temp_delay = delay + random.uniform(0, 0.5)
+                delay
                 if random.random() < 0.1:
                     time.sleep(random.uniform(0, 1))
                 else:
                     pyautogui.click(fishingx, fishingy)
-                    time.sleep(temp_delay)
+                    time.sleep(delay)
 
                 sell_clicks += 1
-                time_boosts += temp_delay
+                time_boosts += delay
 
     except KeyboardInterrupt:
         log_message("Program interrupted by user.")
